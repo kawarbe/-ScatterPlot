@@ -1,248 +1,189 @@
 import "./App.css"
 
-import * as d3 from "d3";
-import { color, index } from "d3";
-import React, { useEffect, useState } from 'react';
-import Select from 'react-select';
+import React, { useState, useEffect } from 'react';
+import * as d3 from 'd3';
+import BarChart from "./components/BarChart";
 
 
-export default function App() {
-  
+
+
+const App = () => {
   const [data, setData] = useState([]);
-
   useEffect(() => {
-    fetch('https://s3-us-west-2.amazonaws.com/s.cdpn.io/2004014/iris.json')
-      .then((res) => res.json())
-      .then((json) => {
-        setData(json);
-        const array = json.map((data) => (data.species));
-        const set = new Set(array);
-        const species = Array.from(set);
-        setVisibilty(species);
-        //console.log(visibilty);
+    fetch("/dataFGO.json")
+      .then((response) => response.json())
+      .then((jsonData) => {
+
+        setData(jsonData);
       })
   }, []);
 
 
-  //console.log(data);
+  console.log(data);
 
-  // return <div>
-  //   {data[0].petalLength}
-  // </div>
+  const optionsClass = [
+    { value: "Saber", label: "Saber" },
+    { value: "Archer", label: "Archer" },
+    { value: "Lancer", label: "Lancer" },
+    { value: "Rider", label: "Rider" },
+    { value: "Assassin", label: "Assassin" },
+    { value: "Caster", label: "Caster" },
+    { value: "Berserker", label: "Berserker" },
+    { value: "Ruler", label: "Ruler" },
+    { value: "Extra", label: "Extra" },
+  ];
 
+  const optionsNPEffect = [
+    { value: "all", label: "all" },
+    { value: "only", label: "only" },
+    { value: "buff", label: "buff" }
+  ];
 
-  // async function Data(){
-  //   const data = await fetch('https://s3-us-west-2.amazonaws.com/s.cdpn.io/2004014/iris.json')
-  //   .then(response => {
-  //   return response.json()
-  //   })
-  // }
-  // const data = Data();
-  // console.log(data);
-
-  
-  const color = d3.scaleOrdinal(d3.schemeCategory10);
-  for(const item of data){
-    color(item.species);
-  }
-
-  const array = data.map((data) => (data.species));
-  const set = new Set(array);
-  const species = Array.from(set);
-
-  //console.log(species);
-  
-  
-  const [visibilty, setVisibilty] = useState([]);
-  //console.log(visibilty);
-
-  // const set = new Set(
-  //   data.map(item => item.species)
-  // );
-  // const species = Array.from(set);
-
-  //console.log(species);
-
-  const w = 600;
-  const h = 600;
-  const xaxis = 100;
-  const yaxis = h - 100;
+  const cardType = [
+    { value: "Buster", label: "Buster" },
+    { value: "Arts", label: "Arts" },
+    { value: "Quick", label: "Quick" }
+  ];
 
 
-  
+  // チェックボックスの状態を管理するやつ
+  const ClassCheckedState = Object.fromEntries(
+    optionsClass.map((option) => [option.value, false])
+  );
 
-  // const options = [
-  //   { value: "sepalLength", label: "Sepal Length" },
-  //   { value: "sepalWidth", label: "Sepal Width" },
-  //   { value: "petallLength", label: "Petal Length" },
-  //   { value: "petalWidth", label: "Petal Width" },
-  // ];
-
-  // const [sL,setsL] = useState(options[0]);
-  // const [sW,setsW] = useState(options[1]);
-
-  const sL = "sepalLength";
-  const sW = "sepalWidth";
+  const NPChekedState = Object.fromEntries(
+    optionsNPEffect.map((option) => [option.value, false])
+  );
 
 
-  const xScale = d3.scaleLinear()
-    .domain(d3.extent(data, item => item[sL]))
-    .range([100, w])
-    .nice();
-  const yScale = d3.scaleLinear()
-    .domain(d3.extent(data, item => item[sW]))
-    .range([500, 100])
-    .nice();
+  //console.log(ClassCheckedState);
+  const [classChecked, setClassChecked] = useState(ClassCheckedState);
+  const [NPChecked, setNPCheked] = useState(NPChekedState);
+
+  //console.log(classChecked);
+  //console.log(NPChecked);
 
 
-  
-  const cc =  color.domain();
-  
+  const handleCheckboxChange = (event) => {
+    const value = event.target.value;
+    const isChecked = event.target.checked;
+
+    //console.log(isChecked);
+
+    if (optionsClass.find((item) => item.value === value)) {
+      setClassChecked((prevState) => ({
+        ...prevState,
+        [value]: isChecked
+      }));
+    } else if (optionsNPEffect.find((item) => item.value === value)) {
+      setNPCheked((prevState) => ({
+        ...prevState,
+        [value]: isChecked
+      }));
+    }
+
+  };
+
+
+  const parseDate = (dateString) => {
+    const [year, month, day] = dateString.split('/').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
+
+
+  const calculateDaysFromToday = (data) => {
+    const today = new Date(); // 現在の日付
+    return data.map((d) => {
+      const date = parseDate(d.days); // 日付をDateオブジェクトに変換
+      const timeDiff = today - date; // 現在の日付との差分を計算
+      //console.log(data);
+      const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+      return {
+        ...d,
+        days: daysDiff,
+      };
+    });
+  };
+
+
+  const [calculatedData, setCalculatedData] = useState([]);
+
+  useEffect(() => {
+    if (data) {
+      const a = calculateDaysFromToday(data)
+      console.log(a);
+      setCalculatedData(a);
+    }
+  }, [data]);
+
+
+  // チェックボックスからフィルタリング
+  const filterData = () => {
+    const selectedClasses = optionsClass.filter((item) => classChecked[item.value]).map((item) => item.value);
+    const selectedNPTarget = optionsNPEffect.filter((item) => NPChecked[item.value]).map((item) => item.value);
+
+    if (selectedClasses.length === 0 && selectedNPTarget.length === 0) {
+      return calculatedData;
+    } else if (selectedClasses.length > 0 && selectedNPTarget.length === 0) {
+
+      return calculatedData.filter((d) => selectedClasses.includes(d.class));
+    } else if (selectedClasses.length === 0 && selectedNPTarget.length > 0) {
+      console.log(calculatedData.filter((d) => selectedNPTarget.includes(d.NPtarget)));
+      return calculatedData.filter((d) => selectedNPTarget.includes(d.NPtarget));
+    } else {
+      return calculatedData.filter((d) => selectedClasses.includes(d.class) && selectedNPTarget.includes(d.NPtarget));
+    }
+
+  };
+
+
+  const filteredData = filterData();
+  console.log(filteredData);
+  console.log(calculatedData);
+
 
   return (
-    // <div style={{ width: "600px", margin: "50px" }}>
-    //   <p>Horizontal Axis</p>
-    //   <Select options={options} defaultValue={sL} onChange={(value) => {
-    //         if(value){
-    //             setsL(value);
-    //         }}}
-    //     />
-    //   <p>Vertical Axis</p>
-    //     <Select options={options} defaultValue={sW} onChange={(value) => {
-    //         if(value){
-    //             setsW(value);
-    //         }}}
-    //     />
+    <div >
+      <h1>FGO don't PickUp</h1>
+      <div >
+        <div>
+          <h3>クラス</h3>
+          {optionsClass.map((option) => (
+            <label key={option.value} style={{ marginRight: "10px" }}>
+              <input
+                type="checkbox"
+                value={option.value}
+                checked={classChecked[option.value]}
+                onChange={handleCheckboxChange}
+              />
+              {option.label}
 
-      <svg width={w + 100} height={h}>
-      {
-        //!visibilty.has(item.species)がtrueだったらmapされる
-        data.filter(item => visibilty.includes(item.species))
-        .map((data, index) => (
+            </label>
+          ))}
+        </div>
 
-          // if((data.speices) === "setosa"){
-          //   color = d3.scaleOrdinal(d3.schemeCategory10)
-          // } else if((data.speices) === "versicolor"){
-          //   color = d3.scaleOrdinal(d3.schemeCategory10)
-          // } else {
-          //   color = d3.scaleOrdinal(d3.schemeCategory10)
-          // }
-          <circle key={index} cx={xScale(data.sepalLength)} cy={yScale(data.sepalWidth)} r="5" fill={color(data.species)} />
-        ))
-      }
-      <line x1={xaxis} y1={yaxis} x2={w} y2={yaxis} stroke='black'></line>
-      {
-        //線形変換してくれるtick()
-        xScale.ticks().map((tickValue, index) => {
-          return (
-            <g transform={`translate(${xScale(tickValue)}, ${yaxis})`} key={index}>
-              <line x1="0" y1="0" x2={0} y2={5} stroke="black"></line>
-              <text x={0} y={15} textAnchor="middle" dominantBaseline="central" >{tickValue}</text>
-            </g>
-          );
-        })
-      }
-      <line x1={xaxis} y1={xaxis} x2={xaxis} y2={yaxis} stroke='black'></line>
-      {
-        yScale.ticks().map((tickValue, index) => {
-          return (
-            <g transform={`translate(${xaxis},${yScale(tickValue)})`} key={index}>
-              <line x1={0} y1={0} x2={-5} y2={0} stroke="black"></line>
-              <text x={-10} y={0} textAnchor="end" dominantBaseline="central" >{tickValue}</text>
-            </g>
-          );
-        })
-      }
-      {
-        <g transform={`translate(0,${w / 2})`}>
-          <text x="0" y="-10" transform="rotate(-90 50,0)" >
-            {sL}
-          </text>
-        </g>
-      }
-      {
-        <text x={(w) / 2} y={h - 50} >
-          {sW}
-        </text>
-      }
 
-      <g transform={`translate(${w + 10},${xaxis})`}>
-        {
-          species.map((item, index) => {
-            return (
-              <g transform={`translate(0,${20 * index})`} key={index}
-                style={{cursor: 'pointer'}}
-                onClick={() => {
-                  // const newVisbility = new Set(visibilty);
-                  // if(visibilty.has(item)){
-                  //   newVisbility.delete(item);
-                  // } else {
-                  //   newVisbility.add(item);
-                  // }
-                  // setVisibilty(newVisbility);
+        <div>
+          <h3>宝具タイプ</h3>
+          {optionsNPEffect.map((option) => (
+            <label key={option.value} style={{ marginRight: "10px" }} >
+              <input
+                type="checkbox"
+                value={option.value}
+                checked={NPChecked[option.value]}
+                onChange={handleCheckboxChange}
+              />
+              {option.label}
+            </label>
+          ))}
+        </div>
 
-                  
-                  if(visibilty.includes(item)){
-                  
-                    const newVisbility = visibilty.filter(species => 
-                      species !== item
-                      )
-                    setVisibilty(newVisbility);
-                  } else {
-                    // const newVisibilty = Array.from(visibilty);
-                    // newVisibilty.push(item);
-                    
-                    // setVisibilty(newVisibilty);
-                    // console.log(newVisibilty);
-                    setVisibilty([item].concat(visibilty));
-                  }
-                  
-                }}
-              >
-                
-                <rect x="0" y="0" width="10" height="10" fill={color(item)} />
-                <text x="15" y="5" textAnchor="left" dominantBaseline="central"  fontSize="15" >
-                  {item}
-                </text>
-              </g>
-            );
-          })
-        }
+      </div>
 
-      </g>
-      </svg>
+      {<BarChart data={filteredData} />}
+    </div>
   );
-}
+};
 
-// function App(){
-//   const options = [
-//     { value: "sepalLength", label: "Sepal Length" },
-//     { value: "sepalWidth", label: "Sepal Width" },
-//     { value: "petallLength", label: "Petal Length" },
-//     { value: "petalWidth", label: "Petal Width" },
-//   ];
-
-//   const [selectedValueX,setSelectedXValue] = useState(options[0]);
-//   const [selectedValueY,setSelectedYValue] = useState(options[1]);
-//   return (
-//     <div style={{ width: "300px", margin: "50px" }} >
-//         <p>Horizontal Axis</p>
-//         <Select options={options} defaultValue={selectedValueX} onChange={(value) => {
-//             if(value){
-//                 setSelectedXValue(value);
-//             }}}
-//         />
-//         <p>Vertical Axis</p>
-//         <Select options={options} defaultValue={selectedValueY} onChange={(value) => {
-//                 if(value){
-//                     setSelectedYValue(value);
-//                 }}}
-//         />
-//         <Draw XValue={selectedValueX} YValue={selectedValueY} />
-        
-//     </div>
-//     );
-// }
-
-
-// export default App();
+export default App;
